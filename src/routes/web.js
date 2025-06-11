@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controller/AuthController');
  const UserController = require('../controller/UserController');
  const transactionController = require('../controller/transactionController');
-
+const Helper = require('../helper/helper');
 
 const authMiddleware = require("../middleware/authMiddleware"); // JWT Auth Middleware
 const TeamController = require("../controller/TeamController"); 
@@ -53,7 +53,10 @@ router.get('/totalRef', authMiddleware, UserController.totalRef);
 router.post('/ChangeMail', authMiddleware,authController.changeMail);
  
 
-router.post('/txnPassword',  UserController.ChangePassword)
+router.post('/txnPassword',  UserController.ChangePassword);
+
+router.post('/sendnotice', authMiddleware, Helper.addNotification);
+router.get('/fetchnotice', authMiddleware, UserController.fetchnotice);
 // router.post('/register', (req, res) => {
 //   res.json({ message: 'Welcome to regiset' });
 // });

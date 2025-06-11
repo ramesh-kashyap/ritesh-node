@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const sendEmail = require('../utils/sendEmail');
 const BuyFund = require('../models/BuyFunds');
 const logger = require("../../utils/logger");
-
+const { addNotification } = require('../helper/helper');
 
 const register = async (req, res) => {
   // console.log(req.body);

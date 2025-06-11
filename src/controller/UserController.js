@@ -10,7 +10,9 @@ const axios = require('axios');
 const sequelize = require('../config/connectDB');
 const Investment = require('../models/Investment');
 const crypto = require('crypto');
+const Notification = require('../models/Notification');
 const sendEmail = require('../utils/sendEmail');
+const { addNotification } = require('../helper/helper');
 const available_balance = async (req, res) => {
     try {
       const userId = req.user?.id;
@@ -1145,6 +1147,10 @@ const ChangePassword = async (req, res) => {
       }
     );
 
+    const userId = user.id;
+    const title = "Welcome To Notifiction";
+    const message = "Login password change Successfully";
+      addNotification(userId, title,message);
     return res.status(200).json({
       success: true,
       message: "Password changed successfully!"
@@ -1160,17 +1166,13 @@ const ChangePassword = async (req, res) => {
 const getUserDetails = async (req, res) => {
   try {
     const userId = req.user?.id;
-
     if (!userId) {
       return res.status(401).json({ message: "User not authenticated!" });
     }
-
     const user = await User.findOne({ where: { id: userId } });
-
     if (!user) {
       return res.status(404).json({ message: "User not found!" });
     }
-
     return res.status(200).json({
       id: user.id,
       username: user.username,
@@ -1319,8 +1321,8 @@ const totalRef = async (req, res) => {
       if (!user) {
         return res.status(200).json({success: false, message: "User not found!" });
       } 
-    //   const amount = parseFloat(amount);
-    const balance = await getAvailableBalance(userId)
+      //   const amount = parseFloat(amount);
+      const balance = await getAvailableBalance(userId);
       const checkavail = await myqualityTeam(userId);
       const uppervip = await qualityLevelTeam(userId);
       // console.log(checkavail);
@@ -1436,5 +1438,21 @@ const qualityLevelTeam = async (userId, level = 3) => {
     //   }
     // }
 
+      
+ const fetchnotice = async (req, res) => { 
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(200).json({success: false, message: "User not authenticated!" });
+      } ;
+      // console.log(checkavail);
+      const notice = await Notification.findAll({ where: { user_id: userId } });
+      return res.status(200).json({success: true, notices: notice,});
+    } catch (error) {
+      console.error("Something went wrong:", error);
+      return res.status(200).json({success: false, message: "Internal Server Error" });
+    }
+  };
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, fetchvip, myqualityTeam};
+
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, fetchvip, myqualityTeam, fetchnotice};
