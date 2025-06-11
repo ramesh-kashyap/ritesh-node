@@ -1045,7 +1045,7 @@ const InvestHistory = async (req, res) => {
     }
     const buy_funds = await BuyFund.findAll({
       where: { user_id: userId }, // Filter by user_id (logged-in user's ID)
-      order: [['created_at', 'DESC']], // Optional: Order investments by most recent first
+      order: [['created_at', 'DESC']], // Optional: Order investments by most recent first 1
     });
     // console.log("i am sach",buy_funds);
     if (!buy_funds) {
