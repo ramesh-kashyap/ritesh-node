@@ -5,6 +5,7 @@ const Withdraw = require('../models/Withdraw');
 const BuyFund = require('../models/BuyFunds');
 const Server = require('../models/Servers');
 const Trade = require('../models/Trade');
+const Machines = require('../models/Machines');
 const { calculateAvailableBalance } = require("../helper/helper");
 const axios = require('axios');
 const sequelize = require('../config/connectDB');
@@ -1335,6 +1336,82 @@ const totalRef = async (req, res) => {
   };
 
 
+const quality = async (req, res) => { 
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "User not authenticated!" });
+    }
+
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not found!" });
+    }
+
+    const balance = await getAvailableBalance(userId);
+    const team = await myqualityTeam(userId); // Should return { TeamA, TeamBC }
+    const uppervip = await qualityLevelTeam(userId); // (Not used here but fine)
+    const memberCount = await User.count({ where: { sponsor: userId } });
+
+    let vip = 0;
+
+    if (balance >= 30 && memberCount >= 0 && team.TeamBC >= 0) vip = 1;
+    if (balance >= 500 && memberCount >= 3 && team.TeamBC >= 6) vip = 2;
+    if (balance >= 2000 && memberCount >= 10 && team.TeamBC >= 24) vip = 3;
+    if (balance >= 5000 && memberCount >= 15 && team.TeamBC >= 48) vip = 4;
+
+    // ✅ Fix: Don't return inside a helper function (tradeIncome)
+    await tradeIncome(userId, balance, vip);
+
+    return res.status(200).json({ success: true, message: "Trade Successfully" });
+
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+
+
+
+const tradeIncome = async (userId, balance, vip) => {
+  try {
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      console.log("User not found!");
+      return null;
+    }
+
+    const tradepercent = await Machines.findOne({ where: { m_id: vip } });
+    if (!tradepercent) {
+      console.log("Machine VIP config not found!");
+      return null;
+    }
+
+    const tperc = tradepercent.m_return; // e.g., 5 for 5%
+    const amt = (balance * tperc) / 100;
+
+    const income = await Income.create({
+      user_id: userId,
+      user_id_fk: `VIP${vip}`, // or generate a txnId if needed
+      comm: userId, // assuming this is the same, or replace with actual
+      remarks: "Trade Income",
+      amt: amt,
+      ttime: new Date(),
+      level: 0,
+      rname: user.name,
+    });
+
+    return income;
+
+  } catch (error) {
+    console.error("❌ tradeIncome error:", error);
+    return null;
+  }
+};
+
+   
+
    const myqualityTeam = async (userId, level = 3) => {
   let arrin = [userId];
   let ret = {};
@@ -1455,4 +1532,4 @@ const qualityLevelTeam = async (userId, level = 3) => {
   };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, fetchvip, myqualityTeam, fetchnotice};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice};

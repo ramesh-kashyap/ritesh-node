@@ -30,6 +30,7 @@ router.post('/process-withdrawal', authMiddleware, UserController.processWithdra
 
 
 router.get('/fetchvip', authMiddleware, UserController.fetchvip);
+router.post('/quality', authMiddleware, UserController.quality);
 router.post('/submitserver', authMiddleware, UserController.submitserver);
 router.get('/fetchrenew', authMiddleware, UserController.fetchrenew);
 router.post('/renew-server', authMiddleware, UserController.renewserver);
