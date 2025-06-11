@@ -34,6 +34,7 @@ router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
 router.get('/close-trade', authMiddleware,tradeController.stopTrade);
 
 router.get('/fetchvip', authMiddleware, UserController.fetchvip);
+router.post('/quality', authMiddleware, UserController.quality);
 router.post('/submitserver', authMiddleware, UserController.submitserver);
 router.get('/fetchrenew', authMiddleware, UserController.fetchrenew);
 router.post('/renew-server', authMiddleware, UserController.renewserver);
