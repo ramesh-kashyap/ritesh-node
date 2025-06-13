@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/AuthController');
  const UserController = require('../controller/UserController');
+ const tradeController = require('../controller/tradeController');
  const transactionController = require('../controller/transactionController');
 const Helper = require('../helper/helper');
 
@@ -28,6 +29,9 @@ router.get('/withreq', authMiddleware, UserController.withreq);
 router.post('/sendotp', authMiddleware, UserController.sendotp);
 router.post('/process-withdrawal', authMiddleware, UserController.processWithdrawal);
 
+
+router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
+router.get('/close-trade', authMiddleware,tradeController.stopTrade);
 
 router.get('/fetchvip', authMiddleware, UserController.fetchvip);
 router.post('/submitserver', authMiddleware, UserController.submitserver);
