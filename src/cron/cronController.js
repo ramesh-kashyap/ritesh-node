@@ -189,7 +189,7 @@ const processDailyProfits = async () => {
 
 // 🕛 Schedule daily at every 5 minutes
 cron.schedule('*/2 * * * *', async () => {
-  logger.info("⏳ Running scheduled daily profit cron...");
+  // logger.info("⏳ Running scheduled daily profit cron...");
   // await processDailyProfits();
 });
 
