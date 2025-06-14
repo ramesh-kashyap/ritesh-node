@@ -14,7 +14,9 @@ const crypto = require('crypto');
 const Notification = require('../models/Notification');
 const sendEmail = require('../utils/sendEmail');
 const { addNotification } = require('../helper/helper');
-
+const { getBalance} = require("../services/userService");
+const moment = require('moment');
+const { Op } = require('sequelize');
 
 const available_balance = async (req, res) => {
     try {
@@ -23,25 +25,10 @@ const available_balance = async (req, res) => {
       if (!userId) {
         return res.status(200).json({success: false, message: "User not authenticated!" });
       }
-  
-      const user = await User.findOne({ where: { id: userId } });
-  
-      if (!user) {
-        return res.status(200).json({success: false, message: "User not found!" });
-      }
-  
-      const totalCommission = await Income.sum('comm', { where: { user_id: userId } }) || 0;
-      const buyFunds = await BuyFund.sum('amount', { where: { user_id: userId } }) || 0;
-      const investment = await Investment.sum('amount', { where: { user_id: userId } }) || 0;
-      const totalWithdraw = await Withdraw.sum('amount', { where: { user_id: userId } }) || 0;
-      const Rtrades = await Trade.sum('amount', { where: { user_id: userId, status:"Running"} }) || 0;
-      // const Ctrades = await Trade.sum('amount', { where: { user_id: userId, status:"Complete"} }) || 0;
-      // console.log(totalCommission,buyFunds, investment,totalWithdraw,Ctrades, Rtrades);
-      const availableBal = (totalCommission + buyFunds) - (totalWithdraw + investment + Rtrades);
-  
+       const balance   = await getBalance(userId);
       return res.status(200).json({
         success: true,
-        AvailBalance: availableBal.toFixed(2),
+        AvailBalance: balance,
         message: "Amount fetched successfully!"
       });
   
@@ -59,48 +46,10 @@ const available_balance = async (req, res) => {
     if (!user) {
       throw new Error("User not found");
     }
-    const totalCommission = await Income.sum('comm', { where: { user_id: userId } }) || 0;
-    const buyFunds = await BuyFund.sum('amount', { where: { user_id: userId } }) || 0;
-    const investment = await Investment.sum('amount', { where: { user_id: userId } }) || 0;
-    const totalWithdraw = await Withdraw.sum('amount', { where: { user_id: userId } }) || 0;
-    const Rtrades = await Trade.sum('amount', { where: { user_id: userId, status:"Running"} }) || 0;
-    const Ctrades = await Trade.sum('amount', { where: { user_id: userId, status:"Complete"} }) || 0;
-  
-    const availableBal = (totalCommission + buyFunds) - (totalWithdraw + investment + Rtrades);
-  
-    return parseFloat(availableBal.toFixed(2));
+    const balance   = await getBalance(user.id);
+    return balance;
   };
-//   const availbalance = async (req, res) => { 
-//     try {
-//       const userId = req.user?.id;
-  
-//       if (!userId) {
-//         return res.status(401).json({ message: "User not authenticated!" });
-//       }
-  
-//       const user = await User.findOne({ where: { id: userId } });
-  
-//       if (!user) {
-//         return res.status(404).json({ message: "User not found!" });
-//       }
-//       const totalCommission = await Income.sum('comm', { where: { user_id: userId } }) || 0;   
-//       if (totalCommission <= 0) {
-//         return res.json({ message: "You don't have enough balance to withdraw." });
-//       }
-//       const totalWithdraw = await Withdraw.sum('amount', { where: { user_id: userId } }) || 0;
-//       const availableBal = totalCommission - totalWithdraw;
-  
-//       return res.status(200).json({
-//         success: true,
-//         AvailBalance: availableBal.toFixed(2),
-//         message: "Amount fetched successfully!"
-//       });
-  
-//     } catch (error) {
-//       console.error("Something went wrong:", error);
-//       return res.status(500).json({ message: "Internal Server Error" });
-//     }
-//   };
+
 
 const fetchTeamRecursive = async (userId, allMembers = []) => {
     const directMembers = await User.findAll({
@@ -396,9 +345,11 @@ const fetchwallet = async (req, res) => {
       if (!user) {
         return res.status(200).json({success: false, message: "User not found!" });
       } 
+      
+      
     //   const amount = parseFloat(amount);
       return res
-        .status(200).json({success: true, trc20: user.usdtTrc20, bep20: user.usdtBep20});
+        .status(200).json({success: true, trc20: user.usdtTrc20, bep20: user.usdtBep20 , detail_changed_date:user.detail_changed_date , adate: user.adate});
     } catch (error) {
       console.error("Something went wrong:", error);
       return res.status(200).json({success: false,message: "Internal Server Error" });
@@ -470,15 +421,35 @@ const fetchwallet = async (req, res) => {
     try {
       const userId = req.user?.id;
       const { wallet ,amount, verificationCode , type} = req.body;
+
+      if (!amount || amount < 30) {
+            return res.status(200).json({success: false, message: "Invalid amount. Please enter a valid amount." });
+        }
+
   
       if (!userId) {
         return res.status(200).json({success: false, message: "User not authenticated!" });
       }
   
-      const user = await User.findOne({ where: { id: userId } });
-      if (!user) {
-        return res.status(200).json({success: false, message: "User not found!" });
-      }
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+          return res.status(200).json({success: false, message: "User not found!" });
+        }
+
+       const todayWithdraw = await Withdraw.findOne({
+            where: { user_id: user.id, status: { [Op.ne]: 'Failed' }, wdate: moment().format('YYYY-MM-DD') }
+        });
+        if (todayWithdraw) {
+            return res.status(200).json({ success: false,message: 'Withdrawal allowed once per day' });
+        }
+
+        const pendingWithdraw = await Withdraw.findOne({ where: { user_id: user.id, status: 'Pending' } });
+
+        if (pendingWithdraw) {
+            return res.status(200).json({ success: false,message: 'Withdraw request already exists' });
+        }
+
+
       const [otpRecord] = await sequelize.query(
         'SELECT * FROM password_resets WHERE email = ? AND token = ? ORDER BY created_at DESC LIMIT 1',
         {
@@ -490,29 +461,27 @@ const fetchwallet = async (req, res) => {
       if (!otpRecord) {
         return res.json({ message: "Invalid or expired OTP!" });
       }
-      const availableBal = parseFloat(user.userbalance.toFixed(2));
+
+
+      const availableBal = await getBalance(userId);
   
       if (parseFloat(amount) > availableBal) {
-        return res.json({ message: "Insufficient balance!" });
+        return res.status(200).json({success: false, message: "Insufficient balance!" });
       }
+        const now = new Date();
+        const todayStart = now.toISOString().slice(0, 19).replace('T', ' '); // MySQL DATETIME format
+
       await Withdraw.create({
         user_id: userId,
         user_id_fk: user.username,
         amount: parseFloat(amount),
-        status: 'pending',
+        status: 'Pending',
         account: wallet,
+          wdate: todayStart,
         payment_mode: type, 
       });
 
-      await User.update(
-        {
-          userbalance: parseFloat(availableBal) - parseFloat(amount),
-        },
-        {
-          where: { id: user.id },
-        }
-      );
-  
+
       return res.status(200).json({
         success: true,
         message: "Withdrawal request submitted successfully!"
@@ -656,7 +625,6 @@ const fetchwallet = async (req, res) => {
     }
   };
 
-  const { Op } = require("sequelize");
 const { title } = require('process');
 
 const fetchrenew = async (req, res) => {
@@ -970,7 +938,7 @@ const fetchrenew = async (req, res) => {
  
        // ✅ Corrected the Income sum query
        const serverInc = await Income.sum('comm', {
-          where: { user_id: userId, remarks: "Server Commission" },
+          where: { user_id: userId, remarks: "Team Commission" },
        });
       
        return res.status(200).json({

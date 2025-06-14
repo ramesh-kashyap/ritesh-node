@@ -210,7 +210,7 @@ async function addLevelIncome(userId, amount) {
                     user_id_fk: sponsorUser.username,
                     amt: amount,
                     comm: commission,
-                    remarks: "Level Income",
+                    remarks: "Team Commission",
                     level: cnt,
                     rname,
                     fullname,

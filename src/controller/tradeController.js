@@ -115,7 +115,7 @@ const stopTrade = async (req, res) => {
 
     await Income.create(incomeData);
 
-    // Add level income
+    // Add Team Commission
     await addLevelIncome(user.id, contract.profit);
 
     // Return success response

@@ -11,93 +11,77 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const getAvailableBalance = async (userId) => {
     if (!userId) {
-      throw new Error("User not authenticated");
+        throw new Error("User not authenticated");
     }
-  
+
     const user = await User.findOne({ where: { id: userId } });
     if (!user) {
-      throw new Error("User not found");
+        throw new Error("User not found");
     }
-  
+
     const totalCommission = await Income.sum('comm', { where: { user_id: userId } }) || 0;
     const buyFunds = await BuyFund.sum('amount', { where: { user_id: userId } }) || 0;
     const investment = await Investment.sum('amount', { where: { user_id: userId } }) || 0;
     const totalWithdraw = await Withdraw.sum('amount', { where: { user_id: userId } }) || 0;
-    const Rtrades = await Trade.sum('amount', { where: { user_id: userId, status:"Running"} }) || 0;
-    const Ctrades = await Trade.sum('amount', { where: { user_id: userId, status:"Complete"} }) || 0;
-  
-    const availableBal = totalCommission + buyFunds + Ctrades - totalWithdraw - investment-Rtrades;
-  
+    const Rtrades = await Trade.sum('amount', { where: { user_id: userId, status: "Running" } }) || 0;
+    const Ctrades = await Trade.sum('amount', { where: { user_id: userId, status: "Complete" } }) || 0;
+
+    const availableBal = totalCommission + buyFunds + Ctrades - totalWithdraw - investment - Rtrades;
+
     return parseFloat(availableBal.toFixed(2));
-  };
-
-  const getIncome = async (userId,userName,loginId) => {
-    if (!userId) throw new Error("User not authenticated");
-
-    // Set the date range for yesterday
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Fetch Trade Income
-    const tradeIncome = await Income.sum('comm', {
-        where: {
-            user_id: loginId,
-            rname: userName,
-            remarks: "Team Commission",
-            created_at: {
-                [Op.between]: [yesterday, today],
-            },
-        },
-    }) || 0;
-
-    // Fetch Server Income
-    const serverIncome = await Income.sum('comm', {
-        where: {
-            user_id: loginId,
-            rname: userName,
-            remarks: "Server Commission",
-            created_at: {
-                [Op.between]: [yesterday, today],
-            },
-        },
-    }) || 0;
-    const totalTradeIncome = await Income.sum('comm', {
-        where: {
-            user_id: loginId,
-            rname: userName,
-            remarks: "Team Commission",
-        },
-    }) || 0;
-
-    const totalServerIncome = await Income.sum('comm', {
-        where: {
-            user_id: loginId,
-            rname: userName,
-            remarks: "Server Commission",
-        },
-    }) || 0;
-
-    const runningTrade = await Trade.sum('amount', {
-        where: {
-            user_id: userId,
-            status: "Running",
-        },
-    }) || 0;
-
-    // Return both incomes as an object
-    return {
-        tradeIncome: parseFloat(tradeIncome.toFixed(6)),
-        serverIncome: parseFloat(serverIncome.toFixed(6)),
-        totalTradeIncome: parseFloat(totalTradeIncome.toFixed(6)),
-        totalServerIncome: parseFloat(totalServerIncome.toFixed(6)),
-        runningTrade: runningTrade,
-    };
 };
 
+const getIncome = async (userId, userName, loginId) => {
+    if (!userId) throw new Error("User not authenticated");
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const yesterdayEnd = new Date(todayStart); // today 00:00 is end of yesterday
+
+    // Yesterday's Commission
+    const yesterdayCommission = await Income.sum('comm', {
+        where: {
+            user_id: loginId,
+            rname: userName,
+            remarks: "Team Commission",
+            created_at: {
+                [Op.between]: [yesterdayStart, yesterdayEnd],
+            },
+        },
+    }) || 0;
+
+    // Today's Commission
+    const todayCommission = await Income.sum('comm', {
+        where: {
+            user_id: loginId,
+            rname: userName,
+            remarks: "Team Commission",
+            created_at: {
+                [Op.gte]: todayStart,
+            },
+        },
+    }) || 0;
+
+    // Total Commission
+    const totalCommission = await Income.sum('comm', {
+        where: {
+            user_id: loginId,
+            rname: userName,
+            remarks: "Team Commission",
+        },
+    }) || 0;
+
+    return {
+        todayCommission: parseFloat(todayCommission.toFixed(6)),
+        yesterdayCommission: parseFloat(yesterdayCommission.toFixed(6)),
+        totalCommission: parseFloat(totalCommission.toFixed(6)),
+    };
+};
 
 const getUsersByIds = async (ids) => {
     return ids.length ? await User.findAll({ where: { id: { [Op.in]: ids } }, order: [['id', 'DESC']] }) : [];
@@ -105,7 +89,7 @@ const getUsersByIds = async (ids) => {
 
 const getTeamStats = async (team) => {
     if (team.length === 0) return { recharge: 0, withdraw: 0 };
-    
+
     const usernames = team.map(user => user.username);
 
     const [recharge, withdraw] = await Promise.all([
@@ -120,7 +104,7 @@ const myLevelTeam = async (userId, level = 3) => {
     let arrin = [userId];
     let ret = {};
     let i = 1;
-    
+
     while (arrin.length > 0) {
         const allDown = await User.findAll({
             attributes: ['id'],
@@ -143,7 +127,7 @@ const myLevelTeamCount2 = async (userId, level = 3) => {
     let arrin = [userId];
     let ret = {};
     let i = 1;
-    
+
     while (arrin.length > 0) {
         const allDown = await User.findAll({
             attributes: ['id'],
@@ -167,14 +151,14 @@ const myLevelTeamCount2 = async (userId, level = 3) => {
 const getTeam = async (req, res) => {
     try {
         const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
-         const userId = user.id;
+        const userId = user.id;
 
         if (!userId || !userId) {
             return res.status(200).json({ error: "Unauthorized: User not found" });
         }
         const ids = await myLevelTeam(userId);
         const myLevelTeamCount = await myLevelTeamCount2(userId);
-        
+
         const genTeam1 = myLevelTeamCount[1] || [];
         const genTeam2 = myLevelTeamCount[2] || [];
         const genTeam3 = myLevelTeamCount[3] || [];
@@ -187,7 +171,7 @@ const getTeam = async (req, res) => {
             order: [['id', 'DESC']]
         });
 
-        const [team1, team2, team3,team4,team5] = await Promise.all([
+        const [team1, team2, team3, team4, team5] = await Promise.all([
             getUsersByIds(genTeam1),
             getUsersByIds(genTeam2),
             getUsersByIds(genTeam3),
@@ -196,7 +180,7 @@ const getTeam = async (req, res) => {
 
         ]);
 
-        const [team1Stats, team2Stats, team3Stats,team4Stats,team5Stats] = await Promise.all([
+        const [team1Stats, team2Stats, team3Stats, team4Stats, team5Stats] = await Promise.all([
             getTeamStats(team1),
             getTeamStats(team2),
             getTeamStats(team3),
@@ -207,13 +191,13 @@ const getTeam = async (req, res) => {
 
         const teamEarnings = {};
         for (let level = 1; level <= 5; level++) {
-          teamEarnings[`gen_team${level}Earning`] = await Income.sum('comm', {
-            where: {
-              user_id: userId,
-              remarks: 'Team Commission',
-              level: level
-            }
-          });
+            teamEarnings[`gen_team${level}Earning`] = await Income.sum('comm', {
+                where: {
+                    user_id: userId,
+                    remarks: 'Team Commission',
+                    level: level
+                }
+            });
         }
 
         const response = {
@@ -248,7 +232,40 @@ const getTeam = async (req, res) => {
             totalLevelIncome: await Income.sum('comm', { where: { user_id: userId, remarks: 'Team Commission' } }),
             balance: parseFloat(0)
         };
-         res.status(200).json({
+        res.status(200).json({
+            message: 'Fetch successfully',
+            status: true,
+            data: response
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(200).json({
+            message: 'Server error',
+            status: false,
+        });
+    }
+};
+
+
+
+const getTeamRecord = async (req, res) => {
+    try {
+        const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
+        const userId = user.id;
+
+        if (!userId || !userId) {
+            return res.status(200).json({ error: "Unauthorized: User not found" });
+        }
+
+        const totalDirect = await User.count({ where: { id: user.sponsor } });
+        const totalActive = await User.count({ where: { id: user.sponsor, active_status: "Active" } });
+        const response = {
+            totalDirect: totalDirect,
+            totalActive: totalActive,
+            totalLevelIncome: await Income.sum('comm', { where: { user_id: userId, remarks: 'Team Commission' } }),
+        };
+        res.status(200).json({
             message: 'Fetch successfully',
             status: true,
             data: response
@@ -267,7 +284,7 @@ const getTeam = async (req, res) => {
 
 const listUsers = async (req, res) => {
     try {
-       
+
         const { selected_level, limit, page, search } = req.query;
         const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used)
         // 🔹 Fetch user's level team
@@ -280,7 +297,7 @@ const listUsers = async (req, res) => {
         } else {
             genTeam = myLevelTeam;
         }
-// console.log(selected_level);
+        // console.log(selected_level);
 
         // 🔹 Query to get users
         let whereCondition = {
@@ -317,18 +334,17 @@ const listUsers = async (req, res) => {
             order: [["id", "DESC"]],
             limit: limit,
             offset: req.query.page ? (parseInt(req.query.page) - 1) * limit : 0,
-            attributes: ['id', 'name', 'email','username','active_status','userbalance','jdate','created_at','level'] // ← replace with the columns you want
+            attributes: ['id', 'name', 'email', 'username', 'active_status', 'package', 'jdate', 'created_at', 'level'] // ← replace with the columns you want
         });
 
         const usersWithDetails = await Promise.all(rows.map(async (user) => {
-            const { tradeIncome, serverIncome, totalTradeIncome, totalServerIncome,runningTrade } = await getIncome(user.id,user.username,userId); // Fetch both incomes
+            const { todayCommission, yesterdayCommission, totalCommission} = await getIncome(user.id, user.username, userId); // Fetch both incomes
             return {
                 ...user.toJSON(),
-                trade_income: tradeIncome,
-                server_income: serverIncome,
-                totalTradeIncome: totalTradeIncome,
-                totalServerIncome: totalServerIncome,
-                runningTrade: runningTrade,
+                todayCommission: todayCommission,
+                yesterdayCommission: yesterdayCommission,
+                totalCommission: totalCommission,
+              
             };
         }));
 
@@ -348,36 +364,36 @@ const listUsers = async (req, res) => {
 
 
 
-const Getinvate = async (req, res) => { 
+const Getinvate = async (req, res) => {
     try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.status(401).json({ message: "User not authenticated!" });
-      }  
-      
-      const user = await User.findOne({ 
-        where: { id: userId },
-        attributes: ['username'] // Fetch only the username
-      });
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found!" });
-      }  
-      
-      // Send the username in the response
-      return res.status(200).json({
-        success: true,
-        data: { username: user.username }, // Include only the username
-        message: "Username fetched successfully!"
-      });
-      
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ message: "User not authenticated!" });
+        }
+
+        const user = await User.findOne({
+            where: { id: userId },
+            attributes: ['username'] // Fetch only the username
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found!" });
+        }
+
+        // Send the username in the response
+        return res.status(200).json({
+            success: true,
+            data: { username: user.username }, // Include only the username
+            message: "Username fetched successfully!"
+        });
+
     } catch (error) {
-      console.error("Something went wrong:", error);
-      return res.status(500).json({ message: "Internal Server Error" });
+        console.error("Something went wrong:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-  };
+};
 
 
 
-module.exports = { getTeam ,listUsers, Getinvate};
+module.exports = { getTeam, listUsers, Getinvate,getTeamRecord };

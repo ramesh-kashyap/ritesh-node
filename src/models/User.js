@@ -10,6 +10,7 @@ const User = sequelize.define('User', {
     active_status: { type: DataTypes.ENUM('Active', 'Pending'), defaultValue: 'Pending' },
     jdate: { type: DataTypes.DATEONLY },
     adate: { type: DataTypes.DATEONLY , allowNull: true },
+    detail_changed_date: { type: DataTypes.DATEONLY , allowNull: true },
     dialCode: { type: DataTypes.STRING, allowNull: true },
     // date_of_birth: {
     //     type: DataTypes.DATEONLY,
