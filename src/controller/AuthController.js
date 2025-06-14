@@ -110,8 +110,9 @@ return res.status(201).json({ message: "User registered successfully!", username
       txn_no: txnId,
       user_id: createdUser.id,
       user_id_fk: createdUser.username,
+      remarks:"registration_bonus",
       amount: bonusAmount,
-      type: 'registration_bonus',
+      // type: 'registration_bonus',
       status: 'Approved',
       bdate: now,
     });

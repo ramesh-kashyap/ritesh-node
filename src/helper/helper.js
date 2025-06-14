@@ -11,7 +11,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 
 const addNotification = async (userId, title, message) => {
-    console.log("helllo");
   try {
     await Notification.create({
       user_id: userId,

@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const Trade = require('../models/Trade');
 const Income = require('../models/Income');
 const User = require("../models/User");
+const BuyFund = require('../models/BuyFunds');
 const logger = require("../../utils/logger");
 
           // Fetch up to 5 levels of users based on sponsor hierarchy
@@ -187,6 +188,23 @@ const processDailyProfits = async () => {
   }
 };
 
+        const expireRegistrationBonuses = async () => {
+          try {
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+            const result = await BuyFund.update({status: 'Expired'
+            }, {
+              where: {remarks: 'registration_bonus',
+                status: {[Op.ne]: 'Expired'},
+                bdate: {[Op.lte]: twoDaysAgo}
+              }
+            });
+          } catch (err) {
+            console.error("❌ Error updating expired registration bonuses:", err.message);
+          }
+        };
+
 // 🕛 Schedule daily at every 5 minutes
 cron.schedule('*/2 * * * *', async () => {
   // logger.info("⏳ Running scheduled daily profit cron...");
@@ -194,4 +212,4 @@ cron.schedule('*/2 * * * *', async () => {
 });
 
 // 🧪 Optional: Run immediately for testing
-// processDailyProfits();
+// expireRegistrationBonuses();
