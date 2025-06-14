@@ -16,6 +16,7 @@ router.post('/forgotPassword', authController.forgotPassword);
 router.post('/sendForgotOtp', authController.sendForgotOtp);
 router.post('/sendRegisterOtp', authController.sendRegisterOtp);
 
+
 router.get('/', (req, res) => {
   res.json({ message: 'Welcome to the authentication API' });
 });                             
@@ -32,6 +33,7 @@ router.post('/process-withdrawal', authMiddleware, UserController.processWithdra
 
 router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
 router.get('/close-trade', authMiddleware,tradeController.stopTrade);
+router.get('/fetchtrade', authMiddleware, tradeController.tradecount);
 
 router.get('/fetchvip', authMiddleware, UserController.fetchvip);
 router.post('/quality', authMiddleware, UserController.quality);
@@ -62,6 +64,7 @@ router.post('/txnPassword',  UserController.ChangePassword);
 
 router.post('/sendnotice', authMiddleware, Helper.addNotification);
 router.get('/fetchnotice', authMiddleware, UserController.fetchnotice);
+
 // router.post('/register', (req, res) => {
 //   res.json({ message: 'Welcome to regiset' });
 // });

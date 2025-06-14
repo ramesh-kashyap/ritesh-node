@@ -136,8 +136,6 @@ const stopTrade = async (req, res) => {
 const tradeOnJson = async (req, res) => {
   try {
     const user = req.user;
-
-    
     // moment.tz.setDefault('Asia/Kolkata');
     const todayStr = new Date().toISOString().split("T")[0];
     const startOfDay = new Date();
@@ -320,4 +318,34 @@ const tradeOnJson = async (req, res) => {
   }
 };
 
-module.exports = { tradeOnJson,stopTrade};
+const tradecount = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "Not Authorised" });
+    }
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User Not Found" });
+    }
+    const startOfDay = moment().startOf('day').toDate();
+    const endOfDay = moment().endOf('day').toDate();
+    const tradeCount = await Contract.count({
+      where: {
+        user_id: userId,
+        created_at: {
+          [Op.between]: [startOfDay, endOfDay]
+        }
+      }
+    });
+    return res.status(200).json({ success: true, count: tradeCount });
+
+  } catch (err) {
+    return res.status(200).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
+module.exports = { tradeOnJson,stopTrade, tradecount};
