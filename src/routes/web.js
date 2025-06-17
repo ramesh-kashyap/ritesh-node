@@ -43,9 +43,9 @@ router.post('/renew-server', authMiddleware, UserController.renewserver);
 router.get('/investments', authMiddleware, UserController.InvestHistory);
 router.get('/withdraw-history', authMiddleware, UserController.withdrawHistory);
 router.post('/changePassword', authMiddleware, UserController.ChangePassword);
-
+router.post('/changePassword', authMiddleware, UserController.ChangePassword);
 router.get('/fetchservers', authMiddleware, UserController.fetchservers);
-router.post('/save-address/:networkType', authMiddleware, UserController.saveWalletAddress);
+router.post('/changedetails', authMiddleware, UserController.changedetails);
 
 router.get('/getUserHistory', authMiddleware, transactionController.getUserHistory);
 

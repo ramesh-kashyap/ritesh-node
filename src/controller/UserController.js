@@ -1071,6 +1071,42 @@ const withdrawHistory = async (req, res) => {
   }
 };
 
+const changedetails = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    console.log(req.body);
+    const { username, name, sponsor } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized request." });
+    }
+
+    const user = await User.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    // Optional: Check for username conflict with others
+    const existingUser = await User.findOne({ where: { username, id: { [Op.ne]: userId } } });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: "Username already taken." });
+    }
+
+    // Update values
+    user.username = username;
+    user.name = name;
+    user.sponsor = sponsor;
+    await user.save();
+
+    return res.status(200).json({ success: true, message: "Details updated successfully." });
+  } catch (err) {
+    console.error("Change Details Error:", err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+
 const ChangePassword = async (req, res) => {
   try {
     const { password, password_confirmation, verification_code } = req.body;
@@ -1151,6 +1187,7 @@ const getUserDetails = async (req, res) => {
       email: user.email, // Assuming 'email' field exists in the user model
       bep20: user.usdtTrc20,  // Fetching and including 'bep20' address
       trc20: user.usdtBep20,
+      sponsor: user.sponsor,
       message: "User details fetched successfully"
     });
   } catch (error) {
@@ -1502,4 +1539,4 @@ const qualityLevelTeam = async (userId, level = 3) => {
   };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance,changedetails, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice};
