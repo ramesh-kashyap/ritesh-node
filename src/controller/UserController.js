@@ -67,12 +67,19 @@ const available_balance = async (req, res) => {
           where: { user_id: userId, remarks: "Order Revenue",ttime: moment().format('YYYY-MM-DD') },
        });
 
+       const response = {
+        teamIncome : teamIncome,
+        todayTeamIncome:todayTeamIncome, 
+        totalIncome: totalIncome,
+        todayTotalIncome: todayTotalIncome,
+        tradingIncome: tradingIncome,
+        todayTradingIncome: todayTradingIncome,
+       }
        
       
       return res.status(200).json({
         success: true,
-        AvailBalance: balance,
-        message: "Amount fetched successfully!"
+        data: response,
       });
   
     } catch (error) {
@@ -1582,4 +1589,4 @@ const qualityLevelTeam = async (userId, level = 3) => {
   };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo};
