@@ -26,6 +26,7 @@ router.get('/directeam',  authMiddleware,UserController.direcTeam);
 router.get('/fetchwallet', authMiddleware, UserController.fetchwallet);
 router.get('/dynamic-upi-callback', UserController.dynamicUpiCallback);
 router.get('/availbal', authMiddleware, UserController.available_balance);
+router.get('/incomeInfo', authMiddleware, UserController.incomeInfo);
 router.get('/withreq', authMiddleware, UserController.withreq);
 router.post('/sendotp', authMiddleware, UserController.sendotp);
 router.post('/process-withdrawal', authMiddleware, UserController.processWithdrawal);
