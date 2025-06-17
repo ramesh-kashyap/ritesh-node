@@ -1125,7 +1125,7 @@ const changedetails = async (req, res) => {
   try {
     const userId = req.user?.id;
     console.log(req.body);
-    const { username, name, sponsor } = req.body;
+    const {name } = req.body;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized request." });
@@ -1137,16 +1137,9 @@ const changedetails = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found." });
     }
 
-    // Optional: Check for username conflict with others
-    const existingUser = await User.findOne({ where: { username, id: { [Op.ne]: userId } } });
-    if (existingUser) {
-      return res.status(409).json({ success: false, message: "Username already taken." });
-    }
-
+  
     // Update values
-    user.username = username;
     user.name = name;
-    user.sponsor = sponsor;
     await user.save();
 
     return res.status(200).json({ success: true, message: "Details updated successfully." });
