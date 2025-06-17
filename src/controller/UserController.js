@@ -38,6 +38,49 @@ const available_balance = async (req, res) => {
     }
   };
   
+
+  const incomeInfo = async (req, res) => {
+    try {
+      const userId = req.user?.id;
+  
+      if (!userId) {
+        return res.status(200).json({success: false, message: "User not authenticated!" });
+      }
+        const teamIncome = await Income.sum('comm', {
+          where: { user_id: userId, remarks: "Team Commission" },
+       });
+        const todayTeamIncome = await Income.sum('comm', {
+          where: { user_id: userId, remarks: "Team Commission",ttime: moment().format('YYYY-MM-DD') },
+       });
+
+        const totalIncome = await Income.sum('comm', {
+          where: { user_id: userId},
+       });
+        const todayTotalIncome = await Income.sum('comm', {
+          where: { user_id: userId,ttime: moment().format('YYYY-MM-DD') },
+       });
+
+        const tradingIncome = await Income.sum('comm', {
+          where: { user_id: userId, remarks: "Order Revenue" },
+       });
+        const todayTradingIncome = await Income.sum('comm', {
+          where: { user_id: userId, remarks: "Order Revenue",ttime: moment().format('YYYY-MM-DD') },
+       });
+
+       
+      
+      return res.status(200).json({
+        success: true,
+        AvailBalance: balance,
+        message: "Amount fetched successfully!"
+      });
+  
+    } catch (error) {
+      console.error("Something went wrong:", error);
+      return res.status(200).json({success: false, message: "Internal Server Error" });
+    }
+  };
+  
   const getAvailableBalance = async (userId) => {
     if (!userId) {
       throw new Error("User not authenticated");
@@ -1502,4 +1545,4 @@ const qualityLevelTeam = async (userId, level = 3) => {
   };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice};
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo};
