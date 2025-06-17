@@ -110,7 +110,7 @@ async function getBalance(userId) {
     const totalBalance = totalCommission + investment - totalWithdraw;
 
     // console.log("Balance:", totalBalance);
-    return totalBalance;
+    return totalBalance.toFixed(3);
   }
   catch (error) {
     console.error("Error in getBalance:", error);
